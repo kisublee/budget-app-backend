@@ -8,6 +8,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const URL = process.env.MONGO_URL;
 
+console.log(URL);
 mongoose
   .connect(URL, {
     useNewUrlParser: true,
