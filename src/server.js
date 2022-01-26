@@ -9,7 +9,7 @@ const dotenv = require("dotenv");
 
 // Configuration.
 dotenv.config();
-const PORT = process.env.PORT;
+const PORT = process.env.MONGO_URL;
 
 app.listen(PORT || 5000, () => {
   console.log("Successfully listening on: " + PORT);
