@@ -1,57 +1,106 @@
 const express = require("express");
-const transactionsDB = require("../models/transactions");
-
+const res = require("express/lib/response");
+require("../src/db/mongoose");
 // Set a router for transactions
+const TransactionDB = require("../models/transaction");
 const transactionsRoute = express.Router();
 
 // Get all transactions
-transactionsRoute.get("/", (req, res) => {
+transactionsRoute.get("/", async (req, res) => {
   console.log("Respond to transactions/");
-  res.json(transactionsDB);
+
+  try {
+    const transactions = await TransactionDB.find({});
+    console.log("Successfully responding to GET all");
+    res.status(200).json(transactions);
+  } catch (error) {
+    res.status(500).send(error);
+  }
 });
 
 // Get one individual transaction.
-transactionsRoute.get("/:id", (req, res) => {
+transactionsRoute.get("/:id", async (req, res) => {
   console.log("Respond to transactions/:id");
+
   const { id } = req.params;
-  if (id > transactionsDB.length) {
-    res.redirect(`/`);
+
+  try {
+    const transaction = await TransactionDB.findById(id);
+    if (!transaction) {
+      return res.status(404).send();
+    }
+    console.log("Successfully responding to /:id");
+    res.status(200).json(transaction);
+  } catch (error) {
+    res.status(500).send(error);
   }
-  res.json(transactionsDB[id]);
+});
+
+// Get transactions from specific category.
+transactionsRoute.get("/category/:category", async (req, res) => {
+  console.log("Respond to transactions/:category");
+
+  const { category } = req.params;
+  try {
+    const transactions = await TransactionDB.find({ category: category });
+    if (!transactions) {
+      return res.status(500).send();
+    }
+    console.log("Successfully responding to /category/:category");
+    res.status(200).json(transactions);
+  } catch (error) {
+    res.status(500).send(error);
+  }
 });
 
 // Create a new transaction.
-transactionsRoute.post("/", (req, res) => {
+transactionsRoute.post("/", async (req, res) => {
   console.log("Respond to POST");
-  transactionsDB.push(req.body);
-  res.status(201).json(transactionsDB);
+  const transaction = await new TransactionDB(req.body);
+  try {
+    // console.log("successfully created: ", transaction);
+    await transaction.save();
+    res.status(201).json(transaction);
+  } catch (error) {
+    res.status(500).send(error);
+  }
 });
 
 // Delete an existing transaction from the database
-transactionsRoute.delete("/:id", (req, res) => {
+transactionsRoute.delete("/:id", async (req, res) => {
   console.log("Respond to DELETE");
 
   const { id } = req.params;
 
-  if (!transactionsDB[id]) {
-    console.log("error for deleting. The inputted invalid id was: " + id);
-    res.status(404).json({
-      error: "What you are looking for does not exist hence we can't delete it",
-    });
+  try {
+    const transaction = await TransactionDB.findByIdAndDelete(id);
+    if (!transaction) {
+      console.log(` ${id} does not exist hence we can't delete it`);
+      return res.status(404).send();
+    }
+    console.log(`${id} has been successfully deleted`);
+    res.json(transaction);
+  } catch (error) {
+    res.status(500).send();
   }
-
-  transactionsDB.splice(req.params.id, 1);
-  res.status(200).json(transactionsDB);
 });
 
 // Update existing transactions in the database
-transactionsRoute.put("/:id", (req, res) => {
+transactionsRoute.patch("/:id", async (req, res) => {
   const { id } = req.params;
-  if (!transactionsDB[id]) {
-    res.status(404).json({ error: `${id} does not exist` });
+
+  try {
+    const transaction = await TransactionDB.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
+    if (!transaction) {
+      return res.status(404).send();
+    }
+    console.log("Successfully Updating:", id);
+    res.status(200).json(transaction);
+  } catch (error) {
+    res.status(500).send(error);
   }
-  transactionsDB[id] = req.body;
-  res.status(200).json(transactionsDB);
 });
 
 module.exports = transactionsRoute;
