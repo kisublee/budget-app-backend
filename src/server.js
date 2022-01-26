@@ -1,7 +1,6 @@
 // Pull in app.js.
 const app = require("./app");
-const cors = require("cors");
-app.use(cors());
+
 // Pull MongoDB
 require("./db/mongoose");
 
